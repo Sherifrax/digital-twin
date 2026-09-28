@@ -13,11 +13,11 @@ variable "github_repository" {
 # terraform import aws_iam_openid_connect_provider.github arn:aws:iam::ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com
 resource "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
-  
+
   client_id_list = [
     "sts.amazonaws.com"
   ]
-  
+
   # This thumbprint is from GitHub's documentation
   # Verify current value at: https://github.blog/changelog/2023-06-27-github-actions-update-on-oidc-integration-with-aws/
   thumbprint_list = [
@@ -28,7 +28,7 @@ resource "aws_iam_openid_connect_provider" "github" {
 # IAM Role for GitHub Actions
 resource "aws_iam_role" "github_actions" {
   name = "github-actions-twin-deploy"
-  
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -43,17 +43,17 @@ resource "aws_iam_role" "github_actions" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository}:*"
+            "token.actions.githubusercontent.com:sub" = "repo:${split("/", var.github_repository)[0]}*/${split("/", var.github_repository)[1]}*:*"
           }
         }
       }
     ]
   })
-  
+
   tags = {
-    Name        = "GitHub Actions Deploy Role"
-    Repository  = var.github_repository
-    ManagedBy   = "terraform"
+    Name       = "GitHub Actions Deploy Role"
+    Repository = var.github_repository
+    ManagedBy  = "terraform"
   }
 }
 
