@@ -8,6 +8,7 @@
 variable "github_repository" {
   description = "GitHub repository in format 'owner/repo'"
   type        = string
+  default     = "Sherifrax/digital-twin"
 }
 
 variable "github_owner_id" {
