@@ -1,9 +1,33 @@
 # This creates an IAM role that GitHub Actions can assume
 # Run this once, then you can remove the file
+#
+# NOTE: GitHub repositories created after July 15, 2026 use immutable subject claims
+# containing numeric owner/repo/environment IDs instead of name-based strings.
+# See: https://docs.github.com/en/actions/reference/security/oidc#immutable-subject-claims
 
 variable "github_repository" {
   description = "GitHub repository in format 'owner/repo'"
   type        = string
+}
+
+variable "github_owner_id" {
+  description = "Numeric GitHub owner (user/org) ID"
+  type        = string
+  default     = "96202179"
+}
+
+variable "github_repo_id" {
+  description = "Numeric GitHub repository ID"
+  type        = string
+  default     = "1392357362"
+}
+
+variable "github_env_ids" {
+  description = "Map of environment name to numeric GitHub environment ID"
+  type        = map(string)
+  default = {
+    dev  = "22928042787"
+  }
 }
 
 # Note: aws_caller_identity.current is already defined in main.tf
@@ -43,7 +67,12 @@ resource "aws_iam_role" "github_actions" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${split("/", var.github_repository)[0]}*/${split("/", var.github_repository)[1]}*:*"
+            # Immutable subject format for repos created after July 15, 2026
+            # Format: repo:<owner>@<owner_id>/<repo>@<repo_id>:environment:<env>
+            "token.actions.githubusercontent.com:sub" = [
+              for env_name, env_id in var.github_env_ids :
+              "repo:${split("/", var.github_repository)[0]}@${var.github_owner_id}/${split("/", var.github_repository)[1]}@${var.github_repo_id}:environment:${env_name}"
+            ]
           }
         }
       }
